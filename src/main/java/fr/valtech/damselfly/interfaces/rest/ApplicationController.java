@@ -33,7 +33,7 @@ public class ApplicationController {
 	}
 	
 	@ExceptionHandler(NotFoundException.class)
-	@ResponseStatus(value=HttpStatus.NOT_FOUND,reason="Contact not found")
+	@ResponseStatus(value=HttpStatus.NOT_FOUND,reason="Key not found")
 	public void notFound() { }
 	
 }
