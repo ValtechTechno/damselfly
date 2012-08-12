@@ -1,5 +1,6 @@
 package fr.valtech.damselfly.interfaces.rest;
 
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -13,6 +14,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import fr.valtech.damselfly.domain.model.ConfigData;
 import fr.valtech.damselfly.domain.model.NotFoundException;
 import fr.valtech.damselfly.domain.model.Repository;
+import fr.valtech.damselfly.service.GraphService;
 
 /**
  * 
@@ -22,6 +24,8 @@ import fr.valtech.damselfly.domain.model.Repository;
  */
 @Controller
 public class ApplicationController {
+	@Autowired
+	private GraphService gs;
 
 	private Repository item;
 
@@ -36,7 +40,7 @@ public class ApplicationController {
 		}
 		ConfigData cd = new ConfigData(new Long(1), appname, env, key,
 				"jdbc:mysql://localhost/mydb");
-		return cd;
+		return gs.retrieveNodeProperty(i, key);
 	}
 
 	@RequestMapping(value = "/{appname}/{env}/{key}/{value}", method = RequestMethod.PUT)
@@ -44,9 +48,7 @@ public class ApplicationController {
 	public ConfigData update(@PathVariable String appname,
 			@PathVariable String env, @PathVariable String key,
 			@PathVariable String value, @RequestBody ConfigData cd) {
-		System.out.println("update");
-		System.out.println(cd.getValue());
-		System.out.println(value);
+		System.out.println(this.getClass().getCanonicalName()+" update");
 		cd.setValue(value);
 		return cd;
 	}
@@ -93,7 +95,7 @@ public class ApplicationController {
 	public ConfigData create(@PathVariable String appname,
 			@PathVariable String env, @PathVariable String key,
 			@PathVariable String value) {
-		System.out.println("create");
+		System.out.println(this.getClass().getCanonicalName()+" create");
 //System.out.println(cd.getValue());
 //		cd.setKey(key);
 //		cd.setEnvrionment(env);

@@ -33,7 +33,7 @@ public class DamselflyTest {
 
 	@Test
 	public void putValueByKey() {
-		System.out.println("Client: put");
+		System.out.println(this.getClass().getCanonicalName()+" Client: put");
 		ConfigData newCD = new ConfigData(new Long(1), "dracar", "dev",
 				"databaseUrl", "toto");
 		restTemplate.put(url + "/{value}", newCD, "databaseUrl", "putr");
@@ -46,7 +46,7 @@ public class DamselflyTest {
 
 	@Test
 	public void create() {
-		System.out.println("Client: post");
+		System.out.println(this.getClass().getCanonicalName()+" Client: post");
 		url = "http://localhost:9999/damselfly/apps/dracar/dev/{key}/{value}";
 		ConfigData cd = new ConfigData(new Long(1), "dracar", "dev", "langue",
 				"français");

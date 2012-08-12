@@ -4,91 +4,126 @@ import static org.fest.assertions.Assertions.assertThat;
 
 import java.util.HashMap;
 
-import org.fest.assertions.Fail;
-import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Traverser;
 
 public class GraphServiceTest {
-	private final String DB_PATH = "target/neo4j-hello-db";
-	private static GraphService gs;
+	private static final String DB_PATH = "target/neo4j-hello-db";
+	private static GraphServiceImpl gs = new GraphServiceImpl(DB_PATH);
 
-	@Before
-	public void createRelationship() {
-
-		gs = new GraphService(DB_PATH);
+	@BeforeClass
+	public static void createRelationships() {
 
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
-		propertyMap.put(gs.APP, "dracar");
 
-		try {
-			gs.createRelationshipFromRoot(propertyMap);
-		} catch (Exception e) {
-			Fail.fail();
-		}
+		propertyMap.put(GraphServiceImpl.APP, "dracar");
+		Node n = gs.createReference(propertyMap);
 
-		/*
-		 * try {
-		 * 
-		 * Node n1 = graphDb.createNode(); n1.setProperty(APP, "dracar");
-		 * nodeIndex.add(n1, APP, "dracar");
-		 * 
-		 * graphDb.getReferenceNode().createRelationshipTo(n1, RelTypes.ROOT);
-		 * 
-		 * Node n2 = graphDb.createNode(); n2.setProperty(ENV, "dev");
-		 * nodeIndex.add(n2, ENV, "dev");
-		 * 
-		 * Node n3 = graphDb.createNode(); n3.setProperty(KEY, "databaseUrl");
-		 * n3.setProperty(VALUE, "jdbc machin chose DEV");
-		 * 
-		 * Relationship rela = n1.createRelationshipTo(n2, RelTypes.ENV);
-		 * Relationship relb = n2.createRelationshipTo(n3,
-		 * RelTypes.ENV_CONFIGURATION);
-		 * 
-		 * rela.setProperty("dracar", "développement");
-		 * 
-		 * Node n4 = graphDb.createNode(); n4.setProperty(ENV, "prod");
-		 * 
-		 * Node n5 = graphDb.createNode(); n5.setProperty(KEY, "databaseUrl");
-		 * n5.setProperty(VALUE, "jdbc machin chose PROD");
-		 * 
-		 * Relationship relc = n1.createRelationshipTo(n4, RelTypes.ENV);
-		 * relc.setProperty("dracar", "production");
-		 * 
-		 * Relationship reld = n4.createRelationshipTo(n5,
-		 * RelTypes.ENV_CONFIGURATION);
-		 * 
-		 * Node n6 = graphDb.createNode(); n6.setProperty(KEY, "clecommune");
-		 * n6.setProperty(VALUE, "valeur commune");
-		 * 
-		 * Relationship rele = n1.createRelationshipTo(n6,
-		 * RelTypes.GLOBAL_CONGIGURATION); rele.setProperty("dracar", "GLOBAL");
-		 * 
-		 * tx.success(); } catch (Exception e) { e.printStackTrace(); } finally
-		 * { tx.finish(); }
-		 */
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "dev");
+		gs.addRelationship(n.getId(), propertyMap, "ENVIRONMENT");
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.KEY, "log4jpath");
+		propertyMap.put(GraphServiceImpl.VALUE, "d:");
+		gs.addRelationship(2, propertyMap, "CONFIGURATION");
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.KEY, "databaseURL");
+		propertyMap.put(GraphServiceImpl.VALUE, "jdbc DEV");
+		gs.addRelationship(2, propertyMap, "GLOBAL");
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "prod");
+		gs.addRelationship(n.getId(), propertyMap, "ENVIRONMENT");
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.KEY, "databaseURL");
+		propertyMap.put(GraphServiceImpl.VALUE, "jdbc PROD");
+		gs.addRelationship(5, propertyMap, "CONFIGURATION");
+
+		gs.addRelationship(5, 4, "GLOBAL");
+
+		gs.parcourirGraphe(n);
 	}
 
 	@Test
-	public void testalacon() {
-		HashMap<String, String> propertyMap = new HashMap<String, String>();
+	public void compter() {
+		assertThat(this.countENV()).isEqualTo(4);
+		assertThat(this.countENV_CONFIGURATION()).isEqualTo(2);
+		// assertThat(this.countGLOBAL_CONGIGURATION()).isEqualTo(2);
+	}
 
-		propertyMap.put(GraphService.ENVIRONMENT, "dev");
-
+	@Test
+	public void ajoutDunNoeudDepuisReference() {
+		final HashMap<String, String> propertyMap = new HashMap<String, String>();
+		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "preprod");
 		gs.addRelationship(1, propertyMap, "ENVIRONMENT");
-		assertThat(this.countENV()).isEqualTo(1);
+		assertThat(this.countENV()).isEqualTo(3);
+	}
+
+	@Test
+	public void suppressionDunNoeudDepuisReference() {
+		final HashMap<String, String> propertyMap = new HashMap<String, String>();
+		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "preprod2");
+		gs.addRelationship(1, propertyMap, "ENVIRONMENT");
+
+		assertThat(this.countENV()).isEqualTo(4);
+		gs.removeNode(7);
+		assertThat(this.countENV()).isEqualTo(3);
+	}
+
+	@Test
+	public void modifieUneProprieteDunNoeudENV_CONFIGURATION() {
+		String key = "log4jpath", newValue = "/logs";
+		gs.updateNodeProperty(3, key, newValue);
+		final HashMap<String, String> propertyMap = gs.getNodeProperties(3);
+		for (String v : propertyMap.keySet()) {
+			assertThat(propertyMap.get(v)).isEqualTo(newValue);
+		}
 	}
 
 	public int countENV() {
-		Node neoNode = gs.getENVNode();
-		int numberOfENV = 0;
-		Traverser ENVTraverser = gs.getENV(neoNode);
-		for (Path ENVPath : ENVTraverser) {
-			numberOfENV++;
+		Node neoNode = gs.getREFERENCENode();
+		int numberOf = 0;
+		Traverser t = gs.getENV(neoNode);
+		for (Path p : t) {
+			numberOf++;
 		}
-		return numberOfENV;
+		return numberOf;
 	}
 
+	public int countENV_CONFIGURATION() {
+
+		System.out.println(gs.printENV_CONFIGURATION());
+
+		Node neoNode = gs.getREFERENCENode();
+		int numberOf = 0;
+		Traverser t = gs.getENV_CONFIGURATION(neoNode);
+		for (Path p : t) {
+			numberOf++;
+		}
+		return numberOf;
+	}
+
+	public int countGLOBAL_CONGIGURATION() {
+
+		System.out.println(gs.printGLOBAL_CONFIGURATION());
+
+		Node neoNode = gs.getREFERENCENode();
+		int numberOf = 0;
+		Traverser t = gs.getGLOBAL_CONFIGURATION(neoNode);
+		for (Path p : t) {
+			System.out.println("----------");
+			for (Node n : p.nodes()) {
+				System.out.println(this.getClass().getCanonicalName()
+						+ " CHEMIN GLOBAL_CONGIGURATION Noeud " + n.getId());
+			}
+			numberOf++;
+		}
+		return numberOf;
+	}
 }
