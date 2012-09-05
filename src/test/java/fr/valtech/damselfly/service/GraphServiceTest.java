@@ -9,27 +9,26 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Traverser;
-import org.neo4j.kernel.configuration.Config;
 
 import fr.valtech.damselfly.domain.model.ConfigData;
 
 public class GraphServiceTest {
-	private static final String DB_PATH = "target/neo4j-hello-db-test";
+	private static final String DB_PATH = "/neo4j-hello-db-test";
 	private static GraphServiceImpl gs = new GraphServiceImpl(DB_PATH);
+	private static Node noeudApp1;
 
 	@BeforeClass
 	public static void createRelationships() {
 
-		
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
 
+		
 		propertyMap.put(GraphServiceImpl.APP, "dracar");
-//Node noeudDracar=gs.createNode(propertyMap);
-		Node n = gs.createReference(propertyMap);
+		noeudApp1 = gs.createReference(propertyMap);
 
 		propertyMap.clear();
 		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "dev");
-		gs.addRelationship(n.getId(), propertyMap, "ENVIRONMENT");
+		gs.addRelationship(noeudApp1.getId(), propertyMap, "ENVIRONMENT");
 
 		propertyMap.clear();
 		propertyMap.put(GraphServiceImpl.KEY, "log4jpath");
@@ -43,7 +42,7 @@ public class GraphServiceTest {
 
 		propertyMap.clear();
 		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "prod");
-		gs.addRelationship(n.getId(), propertyMap, "ENVIRONMENT");
+		gs.addRelationship(noeudApp1.getId(), propertyMap, "ENVIRONMENT");
 
 		propertyMap.clear();
 		propertyMap.put(GraphServiceImpl.KEY, "databaseURL");
@@ -52,7 +51,7 @@ public class GraphServiceTest {
 
 		gs.addRelationship(5, 4, "GLOBAL");
 
-		gs.parcourirGraphe(n);
+		gs.parcourirGraphe(noeudApp1);
 	}
 
 	@Test
@@ -63,10 +62,10 @@ public class GraphServiceTest {
 	}
 
 	@Test
-	public void ajoutDunNoeudDepuisReference() {
+	public void ajoutDunNoeudDepuisReferenceApplication() {
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
 		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "preprod");
-		gs.addRelationship(1, propertyMap, "ENVIRONMENT");
+		gs.addRelationship(noeudApp1.getId(), propertyMap, "ENVIRONMENT");
 		assertThat(this.countENV()).isEqualTo(3);
 	}
 
@@ -74,7 +73,7 @@ public class GraphServiceTest {
 	public void suppressionDunNoeudDepuisReference() {
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
 		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "preprod2");
-		gs.addRelationship(1, propertyMap, "ENVIRONMENT");
+		gs.addRelationship(noeudApp1.getId(), propertyMap, "ENVIRONMENT");
 
 		assertThat(this.countENV()).isEqualTo(4);
 		gs.removeNode(7);

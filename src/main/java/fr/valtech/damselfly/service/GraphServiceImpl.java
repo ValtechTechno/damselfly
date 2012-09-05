@@ -77,7 +77,7 @@ public class GraphServiceImpl implements GraphService {
 		try {
 			nd = createNode(propertyMap);
 			RelationshipType e = findRelationship("REFERENCE");
-			graphDb.getReferenceNode().createRelationshipTo(nd, e);
+			getReferenceNode().createRelationshipTo(nd, e);
 
 			tx.success();
 		} finally {
@@ -518,6 +518,11 @@ public class GraphServiceImpl implements GraphService {
 
 	public void setPathdNeoFile(String pathdNeoFile) {
 		this.pathdNeoFile = pathdNeoFile;
+	}
+
+	@Override
+	public Node getReferenceNode() {
+		return graphDb.getReferenceNode();
 	}
 
 }

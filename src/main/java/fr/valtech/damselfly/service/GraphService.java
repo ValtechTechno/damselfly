@@ -1,5 +1,7 @@
 package fr.valtech.damselfly.service;
 
+import org.neo4j.graphdb.Node;
+
 import fr.valtech.damselfly.domain.model.ConfigData;
 
 public interface GraphService {
@@ -17,4 +19,6 @@ public interface GraphService {
 	String getPathdNeoFile();
 
 	void setPathdNeoFile(String pathdNeoFile);
+
+	Node getReferenceNode();
 }
