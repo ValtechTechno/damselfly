@@ -9,23 +9,16 @@
 
 	<properties>
 		<project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
 		<cglib.version>2.2.2</cglib.version>
-
 		<fest.version>1.4</fest.version>
-
 		<jackson.version>1.8.0</jackson.version>
 		<jetty.version>7.6.0.v20120127</jetty.version>
 		<junit.version>4.10</junit.version>
-
-		<logback.version>1.0.6</logback.version>
-
+		<logback.version>1.0.7</logback.version>
 		<mockito.version>1.9.0</mockito.version>
-
 		<servlet-api.version>2.5</servlet-api.version>
-		<slf4j.version>1.6.1</slf4j.version>
+		<slf4j.version>1.6.6</slf4j.version>
 		<spring.version>3.1.2.RELEASE</spring.version>
-
 	</properties>
 	<dependencies>
 
@@ -70,6 +63,12 @@
 		</dependency>
 
 		<dependency>
+			<groupId>org.springframework</groupId>
+			<artifactId>spring-test</artifactId>
+			<version>${spring.version}</version>
+		</dependency>
+
+		<dependency>
 			<groupId>org.codehaus.jackson</groupId>
 			<artifactId>jackson-mapper-asl</artifactId>
 			<version>${jackson.version}</version>
@@ -102,7 +101,7 @@
 		<dependency>
 			<groupId>org.neo4j</groupId>
 			<artifactId>neo4j</artifactId>
-			<version>1.8.M06</version>
+			<version>1.8.M07</version>
 		</dependency>
 	</dependencies>
 	<build>

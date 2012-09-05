@@ -9,17 +9,22 @@ import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.traversal.Traverser;
+import org.neo4j.kernel.configuration.Config;
+
+import fr.valtech.damselfly.domain.model.ConfigData;
 
 public class GraphServiceTest {
-	private static final String DB_PATH = "target/neo4j-hello-db";
+	private static final String DB_PATH = "target/neo4j-hello-db-test";
 	private static GraphServiceImpl gs = new GraphServiceImpl(DB_PATH);
 
 	@BeforeClass
 	public static void createRelationships() {
 
+		
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
 
 		propertyMap.put(GraphServiceImpl.APP, "dracar");
+//Node noeudDracar=gs.createNode(propertyMap);
 		Node n = gs.createReference(propertyMap);
 
 		propertyMap.clear();
@@ -84,6 +89,13 @@ public class GraphServiceTest {
 		for (String v : propertyMap.keySet()) {
 			assertThat(propertyMap.get(v)).isEqualTo(newValue);
 		}
+	}
+
+	@Test
+	public void rechercherUneCle() {
+		ConfigData cd = gs.retrieveNodeProperty("dracar", "dev", "log4jpath");
+		assertThat(cd).isNotNull();
+		assertThat(cd.getId()).isEqualTo(3);
 	}
 
 	public int countENV() {

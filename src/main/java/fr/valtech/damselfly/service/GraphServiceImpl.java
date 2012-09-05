@@ -22,9 +22,16 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.Traversal;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Qualifier;
+import org.springframework.stereotype.Service;
 
+import fr.valtech.damselfly.domain.model.ConfigData;
 import fr.valtech.damselfly.domain.model.EnumRelationship;
 
+@Service
 public class GraphServiceImpl implements GraphService {
 
 	/**
@@ -35,9 +42,13 @@ public class GraphServiceImpl implements GraphService {
 	public final static String ENVIRONMENT = "environment";
 	public final static String KEY = "key";
 	public final static String VALUE = "value";
+	private String pathdNeoFile;
 
 	private final GraphDatabaseService graphDb;
 	private static Index<Node> nodeIndex;
+	
+	static final Logger logger = LoggerFactory.getLogger(GraphServiceImpl.class);
+
 
 	public GraphDatabaseService getGraphDb() {
 		return graphDb;
@@ -49,12 +60,15 @@ public class GraphServiceImpl implements GraphService {
 	 * @param storeDir
 	 *            location of DB files
 	 */
-	public GraphServiceImpl(final String storeDir) {
+	@Autowired
+	public GraphServiceImpl(@Qualifier("pathdNeoFile") final String storeDir) {
+		logger.debug("*** storeDir -> "+storeDir);
+
 		deleteFileOrDirectory(new File(storeDir));
 		graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(storeDir);
-
 		registerShutdownHook(graphDb);
 		nodeIndex = graphDb.index().forNodes("nodes");
+		createGraph();
 	}
 
 	public Node createReference(Map<String, String> propertyMap) {
@@ -72,11 +86,20 @@ public class GraphServiceImpl implements GraphService {
 		return nd;
 	}
 
-	private Node createNode(final Map<String, String> propertyMap) {
+	public Node createNode(final Map<String, String> propertyMap) {
+
+		Transaction tx = graphDb.beginTx();
 		Node n1 = graphDb.createNode();
-		for (String key : propertyMap.keySet()) {
-			n1.setProperty(key, propertyMap.get(key));
-			nodeIndex.add(n1, key, propertyMap.get(key));
+		try {
+
+			for (String key : propertyMap.keySet()) {
+				n1.setProperty(key, propertyMap.get(key));
+				nodeIndex.add(n1, key, propertyMap.get(key));
+			}
+
+			tx.success();
+		} finally {
+			tx.finish();
 		}
 		return n1;
 	}
@@ -405,4 +428,96 @@ public class GraphServiceImpl implements GraphService {
 		}
 		return m;
 	}
+
+	@Override
+	public ConfigData retrieveNodeProperty(String appname, String env,
+			String key) {
+		Node n = findByKey(appname, key);
+		ConfigData cd = new ConfigData();
+		cd.setApplication(appname);
+		cd.setEnvrionment(env);
+		cd.setId(n.getId());
+		cd.setKey(key);
+		cd.setValue(retrieveNodeProperty(n.getId(), key));
+		return cd;
+	}
+
+	private Node findByKey(String appname, String key) {
+		ExecutionEngine engine = new ExecutionEngine(graphDb);
+
+		ExecutionResult result = engine.execute("START a=node(1) MATCH (a)-[:"
+				+ EnumRelationship.ENV + "]->(b)-[:"
+				+ EnumRelationship.ENV_CONFIGURATION + "]->(c) WHERE c.key=\""
+				+ key + "\" and a.application=\"" + appname + "\" RETURN c");
+
+		Iterator<Node> n_column = result.columnAs("c");
+
+		// for (Map<String, Object> map : result) {
+		// System.out.println(map);
+		// }
+
+		return IteratorUtil.asIterable(n_column).iterator().next();
+	}
+
+	private Node findByKeyGLOBAL(String appname, String key) {
+		ExecutionEngine engine = new ExecutionEngine(graphDb);
+
+		ExecutionResult result = engine.execute("START a=node(1) MATCH (a)-[:"
+				+ EnumRelationship.ENV + "]->(b)-[:"
+				+ EnumRelationship.GLOBAL_CONFIGURATION
+				+ "]->(c) WHERE c.key=\"" + key + "\" and a.application=\""
+				+ appname + "\" RETURN c");
+
+		Iterator<Node> n_column = result.columnAs("c");
+
+		// for (Map<String, Object> map : result) {
+		// System.out.println(map);
+		// }
+
+		return IteratorUtil.asIterable(n_column).iterator().next();
+	}
+
+	@Override
+	public void createGraph() {
+		final HashMap<String, String> propertyMap = new HashMap<String, String>();
+
+		propertyMap.put(GraphServiceImpl.APP, "dracar");
+		// Node noeudDracar=gs.createNode(propertyMap);
+		Node n = createReference(propertyMap);
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "dev");
+		addRelationship(n.getId(), propertyMap, "ENVIRONMENT");
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.KEY, "log4jpath");
+		propertyMap.put(GraphServiceImpl.VALUE, "d:");
+		addRelationship(2, propertyMap, "CONFIGURATION");
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.KEY, "databaseURL");
+		propertyMap.put(GraphServiceImpl.VALUE, "jdbc DEV");
+		addRelationship(2, propertyMap, "GLOBAL");
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "prod");
+		addRelationship(n.getId(), propertyMap, "ENVIRONMENT");
+
+		propertyMap.clear();
+		propertyMap.put(GraphServiceImpl.KEY, "databaseURL");
+		propertyMap.put(GraphServiceImpl.VALUE, "jdbc PROD");
+		addRelationship(5, propertyMap, "CONFIGURATION");
+
+		addRelationship(5, 4, "GLOBAL");
+
+	}
+
+	public String getPathdNeoFile() {
+		return pathdNeoFile;
+	}
+
+	public void setPathdNeoFile(String pathdNeoFile) {
+		this.pathdNeoFile = pathdNeoFile;
+	}
+
 }

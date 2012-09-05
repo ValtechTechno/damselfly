@@ -1,5 +1,7 @@
 package fr.valtech.damselfly.interfaces.rest;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Controller;
@@ -13,47 +15,44 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 
 import fr.valtech.damselfly.domain.model.ConfigData;
 import fr.valtech.damselfly.domain.model.NotFoundException;
-import fr.valtech.damselfly.domain.model.Repository;
 import fr.valtech.damselfly.service.GraphService;
 
 /**
  * 
  * 
- * @author nchapon
+ * @author nchapon, jlt
  * 
  */
 @Controller
 public class ApplicationController {
-	@Autowired
+	static final Logger logger = LoggerFactory.getLogger(ApplicationController.class);
+
+	
+	@Autowired()
 	private GraphService gs;
 
-	private Repository item;
+	// private Repository item;
 
-	@RequestMapping(value = "/{appname}/{env}/{key}", method = RequestMethod.GET)
+	@RequestMapping(value = "/apps/{appname}/{env}/{key}", method = RequestMethod.GET)
 	@ResponseStatus(HttpStatus.OK)
 	public @ResponseBody
 	ConfigData get(@PathVariable String appname, @PathVariable String env,
 			@PathVariable String key) {
-
-		if (!"databaseUrl".equals(key)) {
-			throw new NotFoundException();
-		}
-		ConfigData cd = new ConfigData(new Long(1), appname, env, key,
-				"jdbc:mysql://localhost/mydb");
-		return gs.retrieveNodeProperty(i, key);
+		logger.debug("*** HOURA  "+appname+env+key);
+		return gs.retrieveNodeProperty(appname, env, key);
 	}
 
-	@RequestMapping(value = "/{appname}/{env}/{key}/{value}", method = RequestMethod.PUT)
-	@ResponseBody
-	public ConfigData update(@PathVariable String appname,
-			@PathVariable String env, @PathVariable String key,
-			@PathVariable String value, @RequestBody ConfigData cd) {
-		System.out.println(this.getClass().getCanonicalName()+" update");
-		cd.setValue(value);
-		return cd;
-	}
+//	@RequestMapping(value = "/apps/{appname}/{env}/{key}/{value}", method = RequestMethod.PUT)
+//	@ResponseBody
+//	public ConfigData update(@PathVariable String appname,
+//			@PathVariable String env, @PathVariable String key,
+//			@PathVariable String value, @RequestBody ConfigData cd) {
+//		System.out.println(this.getClass().getCanonicalName() + " update");
+//		cd.setValue(value);
+//		return cd;
+//	}
 
-	// @RequestMapping(value = "/{appname}/{env}/{key}", method =
+	// @RequestMapping(value = "/apps/{appname}/{env}/{key}", method =
 	// RequestMethod.DELETE)
 	// public String delete(@PathVariable String appname,
 	// @PathVariable String env, @PathVariable String key, Model model,
@@ -90,20 +89,19 @@ public class ApplicationController {
 	// return "errorView";
 	// }
 
-	@RequestMapping(value = "/{appname}/{env}/{key}/{value}", method = RequestMethod.POST)
-	@ResponseBody
-	public ConfigData create(@PathVariable String appname,
-			@PathVariable String env, @PathVariable String key,
-			@PathVariable String value) {
-		System.out.println(this.getClass().getCanonicalName()+" create");
-//System.out.println(cd.getValue());
-//		cd.setKey(key);
-//		cd.setEnvrionment(env);
-//		cd.setValue(value);
-//		cd.setApplication(appname);
-		ConfigData cd = new ConfigData(new Long(1),
-				 appname,env,key,value);
-		return cd;
-	}
+//	@RequestMapping(value = "/apps/{appname}/{env}/{key}/{value}", method = RequestMethod.POST)
+//	@ResponseBody
+//	public ConfigData create(@PathVariable String appname,
+//			@PathVariable String env, @PathVariable String key,
+//			@PathVariable String value) {
+//		System.out.println(this.getClass().getCanonicalName() + " create");
+//		// System.out.println(cd.getValue());
+//		// cd.setKey(key);
+//		// cd.setEnvrionment(env);
+//		// cd.setValue(value);
+//		// cd.setApplication(appname);
+//		ConfigData cd = new ConfigData(new Long(1), appname, env, key, value);
+//		return cd;
+//	}
 
 }
