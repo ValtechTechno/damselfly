@@ -21,4 +21,10 @@ public interface GraphService {
 	void setPathdNeoFile(String pathdNeoFile);
 
 	Node getReferenceNode();
+
+	int countENV();
+
+	int countENV_CONFIGURATION();
+
+	int countGLOBAL_CONGIGURATION();
 }

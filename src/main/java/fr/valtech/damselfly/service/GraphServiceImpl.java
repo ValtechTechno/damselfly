@@ -46,9 +46,9 @@ public class GraphServiceImpl implements GraphService {
 
 	private final GraphDatabaseService graphDb;
 	private static Index<Node> nodeIndex;
-	
-	static final Logger logger = LoggerFactory.getLogger(GraphServiceImpl.class);
 
+	static final Logger logger = LoggerFactory
+			.getLogger(GraphServiceImpl.class);
 
 	public GraphDatabaseService getGraphDb() {
 		return graphDb;
@@ -62,13 +62,12 @@ public class GraphServiceImpl implements GraphService {
 	 */
 	@Autowired
 	public GraphServiceImpl(@Qualifier("pathdNeoFile") final String storeDir) {
-		logger.debug("*** storeDir -> "+storeDir);
+		logger.debug("*** storeDir -> " + storeDir);
 
 		deleteFileOrDirectory(new File(storeDir));
 		graphDb = new GraphDatabaseFactory().newEmbeddedDatabase(storeDir);
 		registerShutdownHook(graphDb);
 		nodeIndex = graphDb.index().forNodes("nodes");
-		createGraph();
 	}
 
 	public Node createReference(Map<String, String> propertyMap) {
@@ -201,10 +200,8 @@ public class GraphServiceImpl implements GraphService {
 	}
 
 	public Node getREFERENCENode() {
-		return graphDb
-				.getReferenceNode()
-				.getSingleRelationship(EnumRelationship.ROOT,
-						Direction.OUTGOING).getEndNode();
+		return getReferenceNode().getSingleRelationship(EnumRelationship.ROOT,
+				Direction.OUTGOING).getEndNode();
 	}
 
 	public Traverser getENV(final Node n) {
@@ -432,7 +429,7 @@ public class GraphServiceImpl implements GraphService {
 	@Override
 	public ConfigData retrieveNodeProperty(String appname, String env,
 			String key) {
-		Node n = findByKey(appname, key);
+		Node n = findValueByKey(appname, key);
 		ConfigData cd = new ConfigData();
 		cd.setApplication(appname);
 		cd.setEnvrionment(env);
@@ -442,15 +439,25 @@ public class GraphServiceImpl implements GraphService {
 		return cd;
 	}
 
-	private Node findByKey(String appname, String key) {
+	public Iterable<Node> findAppNodes() {
 		ExecutionEngine engine = new ExecutionEngine(graphDb);
 
-		ExecutionResult result = engine.execute("START a=node(1) MATCH (a)-[:"
-				+ EnumRelationship.ENV + "]->(b)-[:"
-				+ EnumRelationship.ENV_CONFIGURATION + "]->(c) WHERE c.key=\""
-				+ key + "\" and a.application=\"" + appname + "\" RETURN c");
+		ExecutionResult result = engine.execute("START a=node(0) MATCH (a)-[:"
+				+ EnumRelationship.ROOT + "]->(b) RETURN b");
+		Iterator<Node> n_column = result.columnAs("b");
+		return IteratorUtil.asIterable(n_column);
+	}
 
-		Iterator<Node> n_column = result.columnAs("c");
+	private Node findValueByKey(String appname, String key) {
+		ExecutionEngine engine = new ExecutionEngine(graphDb);
+
+		ExecutionResult result = engine.execute("START a=node(0) MATCH (a)-[:"
+				+ EnumRelationship.ROOT + "]->(b)-[:" + EnumRelationship.ENV
+				+ "]->(c)-[:" + EnumRelationship.ENV_CONFIGURATION
+				+ "]->(d) WHERE d.key=\"" + key + "\" and b.application=\""
+				+ appname + "\" RETURN d");
+
+		Iterator<Node> n_column = result.columnAs("d");
 
 		// for (Map<String, Object> map : result) {
 		// System.out.println(map);
@@ -462,7 +469,7 @@ public class GraphServiceImpl implements GraphService {
 	private Node findByKeyGLOBAL(String appname, String key) {
 		ExecutionEngine engine = new ExecutionEngine(graphDb);
 
-		ExecutionResult result = engine.execute("START a=node(1) MATCH (a)-[:"
+		ExecutionResult result = engine.execute("START a=node(0) MATCH (a)-[:"
 				+ EnumRelationship.ENV + "]->(b)-[:"
 				+ EnumRelationship.GLOBAL_CONFIGURATION
 				+ "]->(c) WHERE c.key=\"" + key + "\" and a.application=\""
@@ -477,6 +484,65 @@ public class GraphServiceImpl implements GraphService {
 		return IteratorUtil.asIterable(n_column).iterator().next();
 	}
 
+	
+	public String getPathdNeoFile() {
+		return pathdNeoFile;
+	}
+
+	public void setPathdNeoFile(String pathdNeoFile) {
+		this.pathdNeoFile = pathdNeoFile;
+	}
+
+	@Override
+	public Node getReferenceNode() {
+		return graphDb.getReferenceNode();
+	}
+
+	
+	public int countENV() {
+		Iterable<Node> nodes = this.findAppNodes();
+		int numberOf = 0;
+		for (Node n : nodes) {
+			Traverser t = this.getENV(n);
+			for (Path p : t) {
+				numberOf++;
+			}
+		}
+
+		return numberOf;
+	}
+
+	public int countENV_CONFIGURATION() {
+
+		System.out.println(this.printENV_CONFIGURATION());
+
+		Node neoNode = this.getREFERENCENode();
+		int numberOf = 0;
+		Traverser t = this.getENV_CONFIGURATION(neoNode);
+		for (Path p : t) {
+			numberOf++;
+		}
+		return numberOf;
+	}
+
+	public int countGLOBAL_CONGIGURATION() {
+
+		System.out.println(this.printGLOBAL_CONFIGURATION());
+
+		Node neoNode = this.getREFERENCENode();
+		int numberOf = 0;
+		Traverser t = this.getGLOBAL_CONFIGURATION(neoNode);
+		for (Path p : t) {
+			System.out.println("----------");
+			for (Node n : p.nodes()) {
+				System.out.println(this.getClass().getCanonicalName()
+						+ " CHEMIN GLOBAL_CONGIGURATION Noeud " + n.getId());
+			}
+			numberOf++;
+		}
+		return numberOf;
+	}
+	
 	@Override
 	public void createGraph() {
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
@@ -510,19 +576,6 @@ public class GraphServiceImpl implements GraphService {
 
 		addRelationship(5, 4, "GLOBAL");
 
-	}
-
-	public String getPathdNeoFile() {
-		return pathdNeoFile;
-	}
-
-	public void setPathdNeoFile(String pathdNeoFile) {
-		this.pathdNeoFile = pathdNeoFile;
-	}
-
-	@Override
-	public Node getReferenceNode() {
-		return graphDb.getReferenceNode();
 	}
 
 }

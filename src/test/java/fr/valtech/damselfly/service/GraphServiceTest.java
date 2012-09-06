@@ -22,7 +22,6 @@ public class GraphServiceTest {
 
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
 
-		
 		propertyMap.put(GraphServiceImpl.APP, "dracar");
 		noeudApp1 = gs.createReference(propertyMap);
 
@@ -51,43 +50,44 @@ public class GraphServiceTest {
 
 		gs.addRelationship(5, 4, "GLOBAL");
 
-		gs.parcourirGraphe(noeudApp1);
+		// gs.parcourirGraphe(gs.getReferenceNode());
 	}
 
 	@Test
 	public void compter() {
-		assertThat(this.countENV()).isEqualTo(4);
-		assertThat(this.countENV_CONFIGURATION()).isEqualTo(2);
+		assertThat(gs.countENV()).isEqualTo(2);
+		assertThat(gs.countENV_CONFIGURATION()).isEqualTo(2);
 		// assertThat(this.countGLOBAL_CONGIGURATION()).isEqualTo(2);
 	}
 
 	@Test
-	public void ajoutDunNoeudDepuisReferenceApplication() {
+	public void ajoutDunNoeudDepuisNoeudApplication() {
+		int a = gs.countENV();
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
 		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "preprod");
 		gs.addRelationship(noeudApp1.getId(), propertyMap, "ENVIRONMENT");
-		assertThat(this.countENV()).isEqualTo(3);
+		assertThat(gs.countENV()).isEqualTo(a + 1);
 	}
 
 	@Test
-	public void suppressionDunNoeudDepuisReference() {
+	public void suppressionDunNoeudDepuisNoeudApplication() {
+		int a = gs.countENV();
 		final HashMap<String, String> propertyMap = new HashMap<String, String>();
 		propertyMap.put(GraphServiceImpl.ENVIRONMENT, "preprod2");
 		gs.addRelationship(noeudApp1.getId(), propertyMap, "ENVIRONMENT");
 
-		assertThat(this.countENV()).isEqualTo(4);
+		assertThat(gs.countENV()).isEqualTo(a + 1);
 		gs.removeNode(7);
-		assertThat(this.countENV()).isEqualTo(3);
+		assertThat(gs.countENV()).isEqualTo(a);
 	}
 
 	@Test
 	public void modifieUneProprieteDunNoeudENV_CONFIGURATION() {
 		String key = "log4jpath", newValue = "/logs";
+
 		gs.updateNodeProperty(3, key, newValue);
-		final HashMap<String, String> propertyMap = gs.getNodeProperties(3);
-		for (String v : propertyMap.keySet()) {
-			assertThat(propertyMap.get(v)).isEqualTo(newValue);
-		}
+		String v = gs.retrieveNodeProperty(3, key);
+		assertThat(v).isEqualTo(newValue);
 	}
 
 	@Test
@@ -97,44 +97,4 @@ public class GraphServiceTest {
 		assertThat(cd.getId()).isEqualTo(3);
 	}
 
-	public int countENV() {
-		Node neoNode = gs.getREFERENCENode();
-		int numberOf = 0;
-		Traverser t = gs.getENV(neoNode);
-		for (Path p : t) {
-			numberOf++;
-		}
-		return numberOf;
-	}
-
-	public int countENV_CONFIGURATION() {
-
-		System.out.println(gs.printENV_CONFIGURATION());
-
-		Node neoNode = gs.getREFERENCENode();
-		int numberOf = 0;
-		Traverser t = gs.getENV_CONFIGURATION(neoNode);
-		for (Path p : t) {
-			numberOf++;
-		}
-		return numberOf;
-	}
-
-	public int countGLOBAL_CONGIGURATION() {
-
-		System.out.println(gs.printGLOBAL_CONFIGURATION());
-
-		Node neoNode = gs.getREFERENCENode();
-		int numberOf = 0;
-		Traverser t = gs.getGLOBAL_CONFIGURATION(neoNode);
-		for (Path p : t) {
-			System.out.println("----------");
-			for (Node n : p.nodes()) {
-				System.out.println(this.getClass().getCanonicalName()
-						+ " CHEMIN GLOBAL_CONGIGURATION Noeud " + n.getId());
-			}
-			numberOf++;
-		}
-		return numberOf;
-	}
 }
